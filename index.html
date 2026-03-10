@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#080B16">
+<title>国际行情监控</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700;800&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+  body{min-height:100vh;background:#0a0e1a;font-family:'Noto Sans SC',-apple-system,'PingFang SC',sans-serif;color:#E0E6F0;overflow-x:hidden;-webkit-font-smoothing:antialiased;overscroll-behavior-y:contain}
+  .container{max-width:1000px;margin:0 auto;padding:20px 16px 40px;position:relative}
+
+  .header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px}
+  .header h1{font-size:22px;font-weight:800;color:#F0F4FF}
+  .header .subtitle{font-size:11px;color:#5A6B8A;font-weight:500;margin-top:3px}
+  .status-bar{display:flex;align-items:center;gap:8px;background:rgba(18,22,36,.8);border-radius:12px;padding:8px 12px;border:1px solid rgba(255,255,255,.06);flex-shrink:0}
+  .pulse-dot{width:8px;height:8px;border-radius:50%;background:#00E676;position:relative;animation:pulse 2s ease-in-out infinite;flex-shrink:0}
+  .pulse-dot::after{content:'';position:absolute;inset:-3px;border-radius:50%;background:rgba(0,230,118,.25);animation:pulse 2s ease-in-out infinite .3s}
+  .status-time{font-size:12px;font-family:monospace;color:#8EA4CC;font-weight:600}
+
+  .section-title{font-size:13px;color:#5A6B8A;font-weight:600;margin-bottom:12px;letter-spacing:.05em;display:flex;align-items:center;gap:6px}
+
+  /* Ticker tape */
+  .ticker-wrap{margin-bottom:24px;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.06)}
+
+  /* Widget cards */
+  .widget-grid{display:flex;flex-direction:column;gap:16px;margin-bottom:24px}
+  .widget-card{background:rgba(18,22,36,.85);border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.08)}
+  .widget-card-inner{width:100%;min-height:220px}
+
+  /* Full chart section */
+  .full-chart-section{margin-bottom:20px}
+  .chart-tabs{display:flex;gap:8px;margin-bottom:12px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .chart-tabs::-webkit-scrollbar{display:none}
+  .chart-tab{padding:8px 18px;border-radius:10px;font-size:13px;font-weight:600;color:#5A6B8A;background:rgba(255,255,255,.04);border:1px solid transparent;cursor:pointer;transition:all .2s;user-select:none;white-space:nowrap;flex-shrink:0}
+  .chart-tab:active{transform:scale(.95)}
+  .chart-tab.active{color:#FFD54F;background:rgba(255,213,79,.12);border-color:rgba(255,213,79,.25)}
+  .full-chart-wrap{border-radius:14px;overflow:hidden;border:1px solid rgba(255,255,255,.08);background:#131722}
+
+  .info-bar{display:flex;justify-content:center;gap:20px;padding:14px 16px;background:rgba(18,22,36,.6);border-radius:14px;border:1px solid rgba(255,255,255,.04);flex-wrap:wrap}
+  .info-item{display:flex;align-items:center;gap:6px}.info-label{font-size:11px;color:#5A6B8A}
+  .info-value{font-size:12px;font-family:monospace;color:#8EA4CC;font-weight:600}
+  .info-green{color:#00E676}
+  .disclaimer{text-align:center;font-size:10px;color:#3A4560;margin-top:20px;line-height:1.6;padding-bottom:env(safe-area-inset-bottom,0)}
+
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.5)}}
+
+  @media(min-width:700px){
+    .container{padding:32px 24px 50px}
+    .header h1{font-size:28px}
+    .widget-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  }
+  @media(max-width:360px){
+    .container{padding:16px 12px 32px}
+    .header h1{font-size:19px}
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <div><h1>国际行情监控</h1><div class="subtitle">实时数据 · TradingView</div></div>
+    <div class="status-bar"><div class="pulse-dot"></div><span class="status-time" id="clock"></span></div>
+  </div>
+
+  <!-- 1. Ticker Tape - scrolling prices -->
+  <div class="ticker-wrap">
+    <div class="tradingview-widget-container">
+      <div class="tradingview-widget-container__widget"></div>
+      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
+      {
+        "symbols": [
+          {"description": "黄金 XAU","proName": "OANDA:XAUUSD"},
+          {"description": "白银 XAG","proName": "OANDA:XAGUSD"},
+          {"description": "WTI原油","proName": "TVC:USOIL"},
+          {"description": "布伦特原油","proName": "TVC:UKOIL"},
+          {"description": "美元指数","proName": "TVC:DXY"},
+          {"description": "比特币","proName": "BITSTAMP:BTCUSD"}
+        ],
+        "showSymbolLogo": true,
+        "isTransparent": true,
+        "displayMode": "adaptive",
+        "colorTheme": "dark",
+        "locale": "zh_CN"
+      }
+      </script>
+    </div>
+  </div>
+
+  <!-- 2. Mini Symbol Overview Cards -->
+  <div class="section-title">📊 实时价格与走势</div>
+  <div class="widget-grid">
+    <!-- Gold -->
+    <div class="widget-card">
+      <div class="widget-card-inner">
+        <div class="tradingview-widget-container">
+          <div class="tradingview-widget-container__widget"></div>
+          <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
+          {
+            "symbol": "OANDA:XAUUSD",
+            "width": "100%",
+            "height": "220",
+            "locale": "zh_CN",
+            "dateRange": "1M",
+            "colorTheme": "dark",
+            "isTransparent": true,
+            "autosize": false,
+            "largeChartUrl": "",
+            "chartOnly": false,
+            "noTimeScale": false
+          }
+          </script>
+        </div>
+      </div>
+    </div>
+
+    <!-- Oil -->
+    <div class="widget-card">
+      <div class="widget-card-inner">
+        <div class="tradingview-widget-container">
+          <div class="tradingview-widget-container__widget"></div>
+          <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
+          {
+            "symbol": "TVC:USOIL",
+            "width": "100%",
+            "height": "220",
+            "locale": "zh_CN",
+            "dateRange": "1M",
+            "colorTheme": "dark",
+            "isTransparent": true,
+            "autosize": false,
+            "largeChartUrl": "",
+            "chartOnly": false,
+            "noTimeScale": false
+          }
+          </script>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Full Interactive Chart -->
+  <div class="full-chart-section">
+    <div class="section-title">📈 详细K线图</div>
+    <div class="chart-tabs" id="symbol-tabs">
+      <button class="chart-tab active" onclick="switchChart('OANDA:XAUUSD',this)">黄金 XAU</button>
+      <button class="chart-tab" onclick="switchChart('TVC:USOIL',this)">WTI 原油</button>
+      <button class="chart-tab" onclick="switchChart('TVC:UKOIL',this)">布伦特原油</button>
+      <button class="chart-tab" onclick="switchChart('OANDA:XAGUSD',this)">白银 XAG</button>
+      <button class="chart-tab" onclick="switchChart('BITSTAMP:BTCUSD',this)">比特币</button>
+    </div>
+    <div class="full-chart-wrap" id="full-chart" style="height:500px">
+      <!-- TradingView Widget - Symbol Overview (more reliable than advanced chart) -->
+      <div class="tradingview-widget-container" id="tv-chart-container" style="height:100%;width:100%">
+        <div class="tradingview-widget-container__widget" style="height:100%;width:100%"></div>
+        <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js" async>
+        {
+          "symbols": [["OANDA:XAUUSD|1M"]],
+          "chartOnly": false,
+          "width": "100%",
+          "height": "100%",
+          "locale": "zh_CN",
+          "colorTheme": "dark",
+          "autosize": true,
+          "showVolume": false,
+          "showMA": false,
+          "hideDateRanges": false,
+          "hideMarketStatus": false,
+          "hideSymbolLogo": false,
+          "scalePosition": "right",
+          "scaleMode": "Normal",
+          "fontFamily": "-apple-system, BlinkMacSystemFont, Trebuchet MS, Roboto, Ubuntu, sans-serif",
+          "fontSize": "10",
+          "noTimeScale": false,
+          "valuesTracking": "1",
+          "changeMode": "price-and-percent",
+          "chartType": "area",
+          "lineWidth": 2,
+          "lineType": 0,
+          "dateRanges": ["1d|15","1w|60","1m|1D","6m|1D","12m|1W","60m|1M","all|1M"]
+        }
+        </script>
+      </div>
+    </div>
+  </div>
+
+  <div class="info-bar">
+    <div class="info-item"><span class="info-label">数据源</span><span class="info-value info-green">TradingView</span></div>
+    <div class="info-item"><span class="info-label">日期</span><span class="info-value" id="date-display"></span></div>
+    <div class="info-item"><span class="info-label">状态</span><span class="info-value info-green">实时</span></div>
+  </div>
+  <div class="disclaimer">📡 实时数据由 TradingView 提供 · 价格仅供参考，不构成投资建议</div>
+</div>
+
+<script>
+// Clock
+function tick(){
+  const n=new Date();
+  document.getElementById('clock').textContent=n.toLocaleTimeString('zh-CN',{hour12:false});
+  document.getElementById('date-display').textContent=n.toLocaleDateString('zh-CN');
+}
+tick(); setInterval(tick,1000);
+
+// Switch full chart symbol
+function switchChart(symbol, btn) {
+  document.querySelectorAll('.chart-tab').forEach(b=>b.className='chart-tab');
+  btn.className='chart-tab active';
+
+  const wrap = document.getElementById('full-chart');
+  wrap.innerHTML = '';
+
+  const container = document.createElement('div');
+  container.className = 'tradingview-widget-container';
+  container.style.cssText = 'height:100%;width:100%';
+
+  const inner = document.createElement('div');
+  inner.className = 'tradingview-widget-container__widget';
+  inner.style.cssText = 'height:100%;width:100%';
+  container.appendChild(inner);
+
+  const script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js';
+  script.async = true;
+  script.textContent = JSON.stringify({
+    symbols: [[symbol + "|1M"]],
+    chartOnly: false,
+    width: "100%",
+    height: "100%",
+    locale: "zh_CN",
+    colorTheme: "dark",
+    autosize: true,
+    showVolume: false,
+    showMA: false,
+    hideDateRanges: false,
+    hideMarketStatus: false,
+    hideSymbolLogo: false,
+    scalePosition: "right",
+    scaleMode: "Normal",
+    fontFamily: "-apple-system, BlinkMacSystemFont, Trebuchet MS, Roboto, Ubuntu, sans-serif",
+    fontSize: "10",
+    noTimeScale: false,
+    valuesTracking: "1",
+    changeMode: "price-and-percent",
+    chartType: "area",
+    lineWidth: 2,
+    lineType: 0,
+    dateRanges: ["1d|15","1w|60","1m|1D","6m|1D","12m|1W","60m|1M","all|1M"]
+  });
+  container.appendChild(script);
+  wrap.appendChild(container);
+}
+</script>
+</body>
+</html>
